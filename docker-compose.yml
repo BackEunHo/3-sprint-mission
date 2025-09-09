@@ -1,14 +1,27 @@
 version: '3.8'
 
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: discodeit-nginx
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./src/main/resources/static:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    networks:
+      - discodeit-network
+
   app:
     image: discodeit:local
     build:
       context: .
       dockerfile: Dockerfile
     container_name: discodeit
-    ports:
-      - "8081:80"
+    expose:
+      - "80"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/discodeit
@@ -16,7 +29,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - STORAGE_TYPE=s3
       - STORAGE_LOCAL_ROOT_PATH=.discodeit/storage
       - AWS_S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}
@@ -45,8 +58,6 @@ services:
       - POSTGRES_DB=discodeit
       - POSTGRES_USER=discodeit_user
       - POSTGRES_PASSWORD=discodeit1234
-    ports:
-      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
@@ -56,8 +67,6 @@ services:
   redis:
     image: redis:7.2-alpine
     container_name: redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
@@ -68,12 +77,10 @@ services:
     image: apache/kafka:latest
     hostname: kafka
     container_name: kafka
-    ports:
-      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -81,7 +88,7 @@ services:
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_NODE_ID: 1
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
-      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
