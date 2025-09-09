@@ -9,12 +9,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-    
-  private final WebSocketInterceptor webSocketInterceptor;
-
-  public WebSocketConfig(WebSocketInterceptor webSocketInterceptor) {
-    this.webSocketInterceptor = webSocketInterceptor;
-  }
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry config) {
